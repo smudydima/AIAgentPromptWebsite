@@ -15,7 +15,6 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
-  posts         Post[]
 }
 
 model RefreshToken {
@@ -30,10 +29,9 @@ model RefreshToken {
 }
 
 model Post {
-  id       String  @id @unique @default(uuid())
-  title    String
-  content  String?
-  private  Boolean @default(false)
-  author   User    @relation(fields: [authorId], references: [id])
-  authorId String
+  id          String   @id @unique @default(uuid())
+  tags        String[]
+  title       String
+  description String
+  isPrivate   Boolean  @default(false)
 }
