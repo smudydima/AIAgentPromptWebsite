@@ -1,7 +1,7 @@
 'use client'
 import { useRef, useEffect } from 'react'
 
-export function ViewModal({ post, onClose, onCopy }) {
+export function ViewModal({ post, onClose, onCopy, activeTab }) {
     const modalRef = useRef(null)
 
     useEffect(() => {
@@ -45,6 +45,12 @@ export function ViewModal({ post, onClose, onCopy }) {
                         {post.description}
                     </p>
                 </div>
+
+                {activeTab === 'public' && (
+                    <p className='text-sm opacity-60 mt-4'>
+                        Author: {post.user?.name || 'anonymous'}
+                    </p>
+                )}
 
                 <div className='modal-action mt-6 pt-4 border-t border-base-300'>
                     <button type='button' className='btn btn-soft' onClick={onClose}>
