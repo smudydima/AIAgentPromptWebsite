@@ -1,10 +1,31 @@
 import { prisma } from "@/lib/prisma";
+import { verifyAccessToken } from "@/lib/auth";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("access_token")?.value;
+
+    let userId: string | undefined;
+    if (token) {
+        try {
+            const payload = await verifyAccessToken(token);
+            userId = String(payload.userId ?? "");
+        } catch {
+            userId = undefined;
+        }
+    }
+
     const { title, tags, description, isPrivate } = await req.json();
 
     const post = await prisma.post.create({
-        data: { title, tags, description, isPrivate },
+        data: {
+            title,
+            tags,
+            description,
+            isPrivate,
+            userId: userId || null,
+        },
     });
 
     return Response.json(post);
@@ -19,9 +40,29 @@ export async function GET(req: Request) {
 
     const visibility = searchParams.get("visibility");
 
-    const where: { isPrivate?: boolean } = {};
+    const cookieStore = await cookies();
+    const token = cookieStore.get("access_token")?.value;
+    let currentUserId: string | undefined;
+    if (token) {
+        try {
+            const payload = await verifyAccessToken(token);
+            currentUserId = String(payload.userId ?? "");
+        } catch {
+            currentUserId = undefined;
+        }
+    }
+
+    const where: { isPrivate?: boolean; userId?: string } = {};
     if (visibility === "private") {
         where.isPrivate = true;
+        if (currentUserId) {
+            where.userId = currentUserId;
+        } else {
+            return Response.json({
+                posts: [],
+                pagination: { page, limit, total: 0, totalPages: 0, hasMore: false },
+            });
+        }
     } else if (visibility === "public") {
         where.isPrivate = false;
     }
@@ -31,6 +72,14 @@ export async function GET(req: Request) {
             where,
             skip,
             take: limit,
+            include: {
+                user: {
+                    select: {
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
         }),
         prisma.post.count({ where }),
     ]);

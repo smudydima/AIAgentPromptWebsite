@@ -5,7 +5,10 @@ import { hashRefreshToken } from "@/lib/auth";
 
 export async function POST() {
   const cookieStore = await cookies();
-  const refreshToken = cookieStore.get("refresh_token")?.value;
+
+  // Try to revoke token from database (check both naming conventions)
+  const refreshToken = cookieStore.get("refresh_token")?.value ??
+                       cookieStore.get("refreshToken")?.value;
 
   if (refreshToken) {
     const hashedToken = hashRefreshToken(refreshToken);
@@ -15,7 +18,11 @@ export async function POST() {
     })
   }
 
+  // Clear both old (camelCase) and new (snake_case) cookie names
   cookieStore.delete("access_token");
   cookieStore.delete("refresh_token");
+  cookieStore.delete("accessToken");
+  cookieStore.delete("refreshToken");
+
   return Response.json({ success: true }, { status: 200 });
 }

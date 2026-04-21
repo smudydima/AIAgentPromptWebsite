@@ -50,7 +50,7 @@ export default function AuthModals({
     signupModalRef.current?.showModal();
   };
 
-  
+
   const switchToLogin = () => {
     closeSignupModal();
     loginModalRef.current?.showModal();
@@ -114,8 +114,19 @@ export default function AuthModals({
         return;
       }
 
+      if (data?.user && onLoginSuccess) {
+        onLoginSuccess(data.user);
+      }
+
       setSignupForm(initialForm);
-      setSignupSuccess("Account created. Now you can log in.");
+      closeSignupModal();
+
+      if (data?.redirect) {
+        router.push(data.redirect);
+      } else {
+        router.push("/my-prompts");
+      }
+      router.refresh();
     } catch {
       setSignupError("Signup failed");
     } finally {
@@ -125,7 +136,7 @@ export default function AuthModals({
 
   return (
     <>
-      <dialog ref={loginModalRef} className="modal">
+      <dialog ref={loginModalRef} className="modal justify-center">
         <div className="modal-box">
           <h3 className="font-bold text-xl mb-4">Login</h3>
           <form className="flex flex-col gap-3" onSubmit={handleLogin}>
@@ -182,7 +193,7 @@ export default function AuthModals({
         </button>
       </dialog>
 
-      <dialog ref={signupModalRef} className="modal">
+      <dialog ref={signupModalRef} className="modal justify-center">
         <div className="modal-box">
           <h3 className="font-bold text-xl mb-4">Sign up</h3>
           <form className="flex flex-col gap-3" onSubmit={handleSignup}>

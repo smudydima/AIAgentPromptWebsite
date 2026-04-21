@@ -30,6 +30,12 @@ export function PromptCard({ post, activeTab, onView, onEdit, onDelete, onCopy }
                     {post.description}
                 </p>
 
+                {activeTab === 'public' && (
+                    <p className='text-xs opacity-60 mt-2'>
+                        Author: {post.user?.name || 'anonymous'}
+                    </p>
+                )}
+
                 <div className='card-actions justify-end mt-4 gap-2'>
                     {activeTab === 'private' && (
                         <>

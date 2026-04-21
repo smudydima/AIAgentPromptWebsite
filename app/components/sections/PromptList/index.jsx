@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import Link from 'next/link'
 import { useToast } from '@/app/hooks/useToast'
+import { useAuthModal } from '@/app/context/AuthModalContext'
 import { usePrompts } from './hooks/usePrompts'
 import { useSearch } from './hooks/useSearch'
 import { PromptCard } from './components/PromptCard'
@@ -9,19 +9,34 @@ import { ViewModal } from './components/ViewModal'
 import { EditModal } from './components/EditModal'
 import { TagPickerModal } from './components/TagPickerModal'
 import { SearchBar } from './components/SearchBar'
+import Link from 'next/link'
 
 export default function PromptList() {
     const { addToast, ToastContainer } = useToast()
+    const { openLogin } = useAuthModal()
     const [activeTab, setActiveTab] = useState('private')
     const [page, setPage] = useState(1)
     const { posts, pagination, fetchPosts, deletePost, updatePost } = usePrompts(activeTab, page)
     const { searchQuery, searchTags, toggleTag, clearTags, setSearch, clearSearch, clearAll, MAX_SEARCH_TAGS } = useSearch()
     const [selectedPost, setSelectedPost] = useState(null)
     const [editingPost, setEditingPost] = useState(null)
+    const [user, setUser] = useState(null)
     const searchTagModalRef = useRef(null)
+
+    useEffect(() => {
+        fetch('/api/auth/me').then(r => r.json()).then(d => setUser(d.user)).catch(() => setUser(null))
+    }, [])
 
     useEffect(() => { fetchPosts() }, [fetchPosts])
     useEffect(() => { setPage(1); clearAll() }, [activeTab, clearAll])
+
+    const handleTabChange = (tab) => {
+        if (tab === 'private' && !user) {
+            openLogin()
+            return
+        }
+        setActiveTab(tab)
+    }
 
     const filteredPosts = posts.filter(post => {
         const matchesTitle = post.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -64,10 +79,10 @@ export default function PromptList() {
             <ToastContainer />
 
             <div className='flex gap-2 mb-6'>
-                <button className={`btn btn-sm ${activeTab === 'private' ? 'bg-base-300' : 'btn-ghost'}`} onClick={() => setActiveTab('private')}>
+                <button className={`btn btn-sm ${activeTab === 'private' ? 'bg-base-300' : 'btn-ghost'}`} onClick={() => handleTabChange('private')}>
                     My Prompts
                 </button>
-                <button className={`btn btn-sm ${activeTab === 'public' ? 'bg-base-300' : 'btn-ghost'}`} onClick={() => setActiveTab('public')}>
+                <button className={`btn btn-sm ${activeTab === 'public' ? 'bg-base-300' : 'btn-ghost'}`} onClick={() => handleTabChange('public')}>
                     Public Prompts
                 </button>
             </div>
@@ -110,7 +125,11 @@ export default function PromptList() {
                         )}
                     </div>
                     {!isFiltering && activeTab === 'private' && (
-                        <Link href='/write-prompt' className='btn btn-soft'>Create your prompts</Link>
+                        user ? (
+                            <Link href='/write-prompt' className='btn btn-soft'>Create your prompts</Link>
+                        ) : (
+                            <button className='btn btn-soft' onClick={openLogin}>Create your prompts</button>
+                        )
                     )}
                     {isFiltering && (
                         <button className='btn btn-ghost' onClick={clearAll}>Clear filters</button>
@@ -130,7 +149,7 @@ export default function PromptList() {
                 </div>
             )}
 
-            <ViewModal post={selectedPost} onClose={closeViewModal} onCopy={handleCopy} />
+            <ViewModal post={selectedPost} onClose={closeViewModal} onCopy={handleCopy} activeTab={activeTab} />
             <EditModal post={editingPost} onClose={closeEditModal} onSave={handleUpdate} />
             <TagPickerModal
                 modalRef={searchTagModalRef}

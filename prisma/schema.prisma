@@ -15,6 +15,7 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
+  posts         Post[]
 }
 
 model RefreshToken {
@@ -34,4 +35,6 @@ model Post {
   title       String
   description String
   isPrivate   Boolean  @default(false)
+  user        User?    @relation(fields: [userId], references: [id])
+  userId      String?
 }
